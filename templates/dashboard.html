@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Workshop overview</p>
+    <h1>Dashboard</h1>
+    <p class="muted">Live totals from <code>car_service_db</code>.</p>
+  </div>
+  <a class="btn primary" href="{{ url_for('add_row', table='job_card') }}">+ New job card</a>
+</div>
+
+<section class="kpi-grid" aria-label="Key performance indicators">
+  <article class="kpi kpi-blue">
+    <span class="kpi-label">Customers</span>
+    <strong class="kpi-value">{{ kpi.customers }}</strong>
+    <span class="kpi-foot">Registered owners</span>
+  </article>
+  <article class="kpi kpi-teal">
+    <span class="kpi-label">Vehicles</span>
+    <strong class="kpi-value">{{ kpi.vehicles }}</strong>
+    <span class="kpi-foot">In the workshop database</span>
+  </article>
+  <article class="kpi kpi-amber">
+    <span class="kpi-label">Pending jobs</span>
+    <strong class="kpi-value">{{ kpi.pending }}</strong>
+    <span class="kpi-foot">Waiting to start</span>
+  </article>
+  <article class="kpi kpi-violet">
+    <span class="kpi-label">In progress</span>
+    <strong class="kpi-value">{{ kpi.in_progress }}</strong>
+    <span class="kpi-foot">Currently on the floor</span>
+  </article>
+  <article class="kpi kpi-green">
+    <span class="kpi-label">Total billed</span>
+    <strong class="kpi-value kpi-money">Rs. {{ kpi.billed|money }}</strong>
+    <span class="kpi-foot">Service + parts, all jobs</span>
+  </article>
+</section>
+
+<div class="page-head section-head">
+  <div>
+    <h2>Open jobs</h2>
+    <p class="muted">Pending and in-progress jobs from the <code>job_bill</code> view.</p>
+  </div>
+  <a class="btn ghost" href="{{ url_for('list_rows', table='job_card') }}">All job cards</a>
+</div>
+
+<div class="card table-card">
+  {% if open_jobs %}
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Job No.</th>
+            <th>Vehicle</th>
+            <th>Customer</th>
+            <th>Service</th>
+            <th>Start</th>
+            <th>Status</th>
+            <th class="align-right">Total</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in open_jobs %}
+            <tr>
+              <td><strong>#{{ job.job_id }}</strong></td>
+              <td>{{ job.reg_no }}</td>
+              <td>{{ job.customer }}</td>
+              <td>{{ job.service_name }}</td>
+              <td>{{ job.start_date|cell }}</td>
+              <td><span class="badge {{ job.status|status_class }}">{{ job.status }}</span></td>
+              <td class="align-right money">Rs. {{ job.total|money }}</td>
+              <td class="actions-col">
+                <a class="btn small ghost" href="{{ url_for('bill', job_id=job.job_id) }}">Bill</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">
+      <strong>No open jobs.</strong>
+      <p>Every job card is completed. Add a new job card to get started.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

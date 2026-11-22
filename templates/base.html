@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Car Service Centre{% endblock %} · REVA University</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar no-print">
+    <div class="nav-wrap">
+      <a class="brand" href="{{ url_for('dashboard') }}">
+        <span class="brand-mark" aria-hidden="true">CS</span>
+        <span class="brand-text">
+          <strong>Car Service Centre</strong>
+          <small>REVA University · DBMS</small>
+        </span>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-label="Toggle navigation"
+              aria-controls="main-nav" aria-expanded="false">☰</button>
+
+      <nav class="nav" id="main-nav" aria-label="Main navigation">
+        <a href="{{ url_for('dashboard') }}"
+           class="{{ 'active' if active == 'dashboard' else '' }}">Dashboard</a>
+        {% for key, label in nav_tables %}
+          <a href="{{ url_for('list_rows', table=key) }}"
+             class="{{ 'active' if active == key else '' }}">{{ label }}</a>
+        {% endfor %}
+        <a href="{{ url_for('reports') }}"
+           class="{{ 'active' if active == 'reports' else '' }}">Reports</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack" role="status" aria-live="polite">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category if category in ['success', 'error', 'info'] else 'info' }}">
+              <span>{{ message }}</span>
+              <button type="button" class="flash-close" aria-label="Dismiss message">×</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer no-print">
+    <p>Car Service Centre Management System · DBMS Mini Project · REVA University</p>
+    <p class="muted">Flask + MySQL 8 · {{ current_year }}</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>

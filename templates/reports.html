@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">SQL analysis</p>
+    <h1>Reports</h1>
+    <p class="muted">All 12 queries from <code>sql/queries.sql</code>, run live against MySQL.</p>
+  </div>
+  <button class="btn ghost no-print" type="button" id="print-reports">Print reports</button>
+</div>
+
+<nav class="report-nav no-print" aria-label="Report shortcuts">
+  {% for report in reports %}
+    <a href="#{{ report.id }}">{{ report.title.split(' · ')[0] }}</a>
+  {% endfor %}
+</nav>
+
+{% for report in reports %}
+  <section class="card report" id="{{ report.id }}">
+    <div class="report-head">
+      <div>
+        <h2>{{ report.title }}</h2>
+        <p class="muted">{{ report.description }}</p>
+      </div>
+      <span class="count-pill">{{ report.rows|length }} row{{ '' if report.rows|length == 1 else 's' }}</span>
+    </div>
+
+    {% if report.rows %}
+      <div class="table-scroll">
+        <table class="data-table compact">
+          <thead>
+            <tr>
+              {% for column in report.columns %}
+                <th>{{ column }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in report.rows %}
+              <tr>
+                {% for column in report.columns %}
+                  <td class="{{ 'money' if row[column] is number and row[column] is not integer else '' }}">
+                    {{ row[column]|cell }}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty"><strong>No rows returned.</strong></div>
+    {% endif %}
+  </section>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ 'Update record' if is_edit else 'New record' }}</p>
+    <h1>{{ title }}</h1>
+    <p class="muted">Fields marked <span class="req">*</span> are required.</p>
+  </div>
+  <a class="btn ghost" href="{{ cancel_url }}">← Back to {{ meta.plural }}</a>
+</div>
+
+{% if table == 'job_part' %}
+  <div class="callout">
+    <strong>How this works:</strong>
+    adding a part inserts the row with the part's current price and reduces
+    <code>stock_qty</code> in one transaction. If the stock would become negative,
+    MySQL rejects it and the whole transaction rolls back.
+  </div>
+{% endif %}
+
+<div class="card form-card">
+  <form method="post" action="{{ action }}" class="form-grid">
+    {% for field in fields %}
+      {% set current = values.get(field.name, '') %}
+      <div class="field {{ 'field-full' if field.full else '' }}">
+        <label for="field-{{ field.name }}">
+          {{ field.label }}
+          {% if field.required %}<span class="req" aria-hidden="true">*</span>{% endif %}
+          {% if not field.required %}<span class="optional">optional</span>{% endif %}
+        </label>
+
+        {% if field.type == 'fk' %}
+          <select id="field-{{ field.name }}" name="{{ field.name }}"
+                  {% if field.required %}required{% endif %}>
+            <option value="">— Select {{ field.label }} —</option>
+            {% for option in fk_options[field.name] %}
+              <option value="{{ option.value }}"
+                      {% if current|string == option.value|string %}selected{% endif %}>
+                {{ option.label }}
+              </option>
+            {% endfor %}
+          </select>
+
+        {% elif field.type == 'select' %}
+          <select id="field-{{ field.name }}" name="{{ field.name }}"
+                  {% if field.required %}required{% endif %}>
+            {% for option in field.options %}
+              <option value="{{ option }}"
+                      {% if current|string == option|string %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+
+        {% elif field.type == 'textarea' %}
+          <textarea id="field-{{ field.name }}" name="{{ field.name }}"
+                    rows="3"
+                    {% if field.required %}required{% endif %}
+                    {% if field.maxlength %}maxlength="{{ field.maxlength }}"{% endif %}
+                    {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}>{{ current }}</textarea>
+
+        {% else %}
+          <input id="field-{{ field.name }}" name="{{ field.name }}"
+                 type="{{ field.type }}"
+                 value="{{ current }}"
+                 {% if field.required %}required{% endif %}
+                 {% if field.maxlength %}maxlength="{{ field.maxlength }}"{% endif %}
+                 {% if field.step %}step="{{ field.step }}"{% endif %}
+                 {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+                 {% if field.type == 'tel' %}inputmode="tel" autocomplete="tel"{% endif %}
+                 {% if field.type == 'email' %}autocomplete="email"{% endif %}
+                 {% if field.type == 'number' %}inputmode="decimal"{% endif %}>
+        {% endif %}
+
+        {% if field.help %}
+          <small class="help" id="help-{{ field.name }}">{{ field.help }}</small>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <div class="form-actions field-full">
+      <button class="btn primary" type="submit">
+        {{ 'Save changes' if is_edit else 'Add ' + meta.singular }}
+      </button>
+      <a class="btn ghost" href="{{ cancel_url }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

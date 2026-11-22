@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ meta.plural }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Manage records</p>
+    <h1>{{ meta.plural }}</h1>
+    <p class="muted">
+      {{ rows|length }} record{{ '' if rows|length == 1 else 's' }}
+      {% if search %}matching “{{ search }}”{% endif %}
+    </p>
+  </div>
+  <a class="btn primary"
+     href="{{ url_for('add_part') if table == 'job_part' else url_for('add_row', table=table) }}">
+    + Add {{ meta.singular }}
+  </a>
+</div>
+
+<form class="searchbar" method="get" action="{{ url_for('list_rows', table=table) }}" role="search">
+  <label class="sr-only" for="search-input">Search {{ meta.plural|lower }}</label>
+  <input id="search-input" type="search" name="q" value="{{ search }}"
+         placeholder="Search {{ meta.plural|lower }}…" autocomplete="off">
+  <button class="btn" type="submit">Search</button>
+  {% if search %}
+    <a class="btn ghost" href="{{ url_for('list_rows', table=table) }}">Clear</a>
+  {% endif %}
+</form>
+
+<div class="card table-card">
+  {% if rows %}
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            {% for column in meta.columns %}
+              <th class="{{ 'align-right' if column.align == 'right' else '' }}">{{ column.label }}</th>
+            {% endfor %}
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              {% for column in meta.columns %}
+                <td class="{{ 'align-right' if column.align == 'right' else '' }}
+                           {{ 'money' if column.money else '' }}
+                           {{ 'nowrap' if column.type == 'date' else '' }}">
+                  {% if column.type == 'status' %}
+                    <span class="badge {{ row[column.key]|status_class }}">{{ row[column.key] }}</span>
+                  {% elif column.money %}
+                    Rs. {{ row[column.key]|money }}
+                  {% elif column.type == 'date' %}
+                    {{ row[column.key]|cell }}
+                  {% else %}
+                    {{ row[column.key]|cell }}
+                  {% endif %}
+                </td>
+              {% endfor %}
+
+              <td class="actions-col">
+                {% if table == 'job_part' %}
+                  <form method="post"
+                        action="{{ url_for('delete_part', job_id=row.job_id, part_id=row.part_id) }}"
+                        class="inline-form"
+                        data-confirm="Remove this part from the job? The stock will be restored.">
+                    <button class="btn small danger" type="submit">Remove</button>
+                  </form>
+                {% else %}
+                  <div class="row-actions">
+                    <a class="btn small" href="{{ url_for('edit_row', table=table, pk=row[meta.pk]) }}">Edit</a>
+                    {% if table == 'job_card' %}
+                      <a class="btn small ghost" href="{{ url_for('bill', job_id=row.job_id) }}">Bill</a>
+                    {% endif %}
+                    <form method="post"
+                          action="{{ url_for('delete_row', table=table, pk=row[meta.pk]) }}"
+                          class="inline-form"
+                          data-confirm="Delete this {{ meta.singular|lower }}? This cannot be undone.">
+                      <button class="btn small danger" type="submit">Delete</button>
+                    </form>
+                  </div>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">
+      <strong>No records found.</strong>
+      {% if search %}
+        <p>Nothing matches “{{ search }}”. Try a different search or clear the filter.</p>
+      {% else %}
+        <p>Add the first {{ meta.singular|lower }} to get started.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

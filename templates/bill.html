@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Bill #{{ bill.job_id }}{% endblock %}
+
+{% block content %}
+<div class="bill-actions no-print">
+  <a class="btn ghost" href="{{ url_for('list_rows', table='job_card') }}">← Back to job cards</a>
+  <button class="btn primary" type="button" id="print-bill">Print bill</button>
+</div>
+
+<article class="bill card">
+  <header class="bill-head">
+    <div class="bill-brand">
+      <span class="bill-mark" aria-hidden="true">CS</span>
+      <div>
+        <h1>Car Service Centre</h1>
+        <p>Bengaluru, Karnataka</p>
+        <p class="muted">DBMS Mini Project · REVA University</p>
+      </div>
+    </div>
+    <div class="bill-meta">
+      <h2>INVOICE</h2>
+      <p><span>Bill No.</span><strong>#{{ bill.job_id }}</strong></p>
+      <p><span>Start date</span><strong>{{ info.start_date|cell }}</strong></p>
+      <p><span>End date</span><strong>{{ info.end_date|cell if info.end_date else '—' }}</strong></p>
+      <p><span>Status</span><strong class="badge {{ info.status|status_class }}">{{ info.status }}</strong></p>
+    </div>
+  </header>
+
+  <section class="bill-parties">
+    <div>
+      <h3>Customer</h3>
+      <p class="strong">{{ info.customer }}</p>
+      {% if info.phone %}<p>{{ info.phone }}</p>{% endif %}
+      {% if info.email %}<p>{{ info.email }}</p>{% endif %}
+      {% if info.address %}<p>{{ info.address }}</p>{% endif %}
+    </div>
+    <div>
+      <h3>Vehicle</h3>
+      <p class="strong">{{ info.reg_no }}</p>
+      <p>{{ info.make }} {{ info.model }}{% if info.year %} · {{ info.year }}{% endif %}</p>
+      <p class="muted">Mechanic: {{ info.mechanic }}</p>
+    </div>
+    <div>
+      <h3>Service</h3>
+      <p class="strong">{{ bill.service_name }}</p>
+      <p class="muted">Job #{{ bill.job_id }}</p>
+    </div>
+  </section>
+
+  <section class="bill-lines">
+    <h3>Parts used</h3>
+    {% if parts %}
+      <div class="table-scroll">
+        <table class="data-table bill-table">
+          <thead>
+            <tr>
+              <th>Part</th>
+              <th class="align-right">Qty</th>
+              <th class="align-right">Unit Price</th>
+              <th class="align-right">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for part in parts %}
+              <tr>
+                <td>{{ part.part_name }}</td>
+                <td class="align-right">{{ part.quantity }}</td>
+                <td class="align-right">Rs. {{ part.unit_price|money }}</td>
+                <td class="align-right">Rs. {{ part.line_total|money }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">No spare parts were used on this job.</p>
+    {% endif %}
+  </section>
+
+  <section class="bill-totals">
+    <div class="total-row">
+      <span>Service charge</span>
+      <span>Rs. {{ bill.service_charge|money }}</span>
+    </div>
+    <div class="total-row">
+      <span>Parts cost</span>
+      <span>Rs. {{ bill.parts_cost|money }}</span>
+    </div>
+    <div class="total-row grand-total">
+      <span>Total payable</span>
+      <span>Rs. {{ bill.total|money }}</span>
+    </div>
+  </section>
+
+  <footer class="bill-foot">
+    <p>Thank you for choosing Car Service Centre.</p>
+    <p class="muted">This is a computer-generated bill for the DBMS mini project.</p>
+  </footer>
+</article>
+{% endblock %}
