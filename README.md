@@ -115,8 +115,97 @@ Open <http://127.0.0.1:5000>.
 | `DB_PASS` | empty | MySQL password |
 | `DB_PORT` | `3306` | Optional MySQL port |
 | `DB_NAME` | `car_service_db` | Optional database name |
+| `DB_SSL` | `0` | `1` for managed MySQL that requires TLS |
+| `DB_SSL_VERIFY` | `0` | `1` to verify the server certificate |
 | `SECRET_KEY` | development key | Optional Flask session key |
 | `FLASK_DEBUG` | `0` | Set to `1` for Flask debug mode |
+| `PORT` | `5000` | Used by hosts such as Render |
+
+### Quick start script (Windows)
+
+```powershell
+.\run.ps1          # installs dependencies, starts http://127.0.0.1:5000
+.\run.ps1 -Init    # also reloads sql/database.sql first (drops the database)
+```
+
+---
+
+## 3b. Deploy it so anyone can open it
+
+The app is a normal WSGI app (`wsgi.py`), so it runs on any Python host.
+The database has to live on a server both you and the host can reach, so the
+recipe is **managed MySQL + a Python web host**.
+
+Files already in the repo for this:
+
+| File | Purpose |
+|---|---|
+| `wsgi.py` | Gunicorn entry point (`wsgi:app`) |
+| `Procfile` | Start command for Render / Railway / Heroku-style hosts |
+| `render.yaml` | Render Blueprint (build + start + env vars) |
+| `init_db.py` | Loads `sql/database.sql` into any MySQL, cloud included |
+
+### Step 1 - free MySQL database
+
+Aiven and TiDB Cloud both offer a free MySQL-compatible server and need no
+credit card.
+
+1. Create the MySQL service and wait until it is **Running**.
+2. Copy the connection details: host, port, user, password, database name.
+3. Load the schema into it from your laptop:
+
+```powershell
+$env:DB_HOST="mysql-xxxxxxxx.aivencloud.com"
+$env:DB_PORT="12345"
+$env:DB_USER="avnadmin"
+$env:DB_PASS="the-password-from-the-console"
+$env:DB_NAME="defaultdb"
+$env:DB_SSL="1"
+.\.venv\Scripts\python.exe init_db.py --skip-create
+```
+
+`init_db.py` prints the row counts at the end. If they read
+`10 12 5 6 10 12 16 12`, the cloud database is ready.
+
+### Step 2 - free web host (Render)
+
+1. Push this repo to GitHub.
+2. On <https://render.com>: **New → Web Service → Build and deploy from a Git
+   repository**, pick this repo.
+3. Settings:
+   - **Runtime:** Python 3
+   - **Build command:** `pip install -r requirements.txt`
+   - **Start command:** `gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120`
+   - **Health check path:** `/healthz`
+4. Add the environment variables from Step 1 (`DB_HOST`, `DB_PORT`, `DB_USER`,
+   `DB_PASS`, `DB_NAME`, `DB_SSL=1`) plus `SECRET_KEY` (any long random string).
+5. **Create Web Service**. The first build takes 2-4 minutes, then Render shows a
+   public URL such as `https://car-service-centre.onrender.com`.
+
+> Render's free instance sleeps after 15 minutes of inactivity; the first request
+> after that takes ~30 seconds to wake up. Everything else works normally.
+
+### Step 3 - check it
+
+```text
+https://your-app.onrender.com/healthz   ->  {"status":"ok","database":"connected"}
+https://your-app.onrender.com/          ->  dashboard
+https://your-app.onrender.com/reports   ->  the 12 SQL reports
+```
+
+### Deploying somewhere else
+
+- **Railway / Fly.io / Heroku-style:** they read `Procfile`; set the same env vars.
+- **PythonAnywhere:** create a Flask app, point the WSGI file at
+  `from wsgi import app as application`, and set the env vars in the web tab.
+- **Docker host:** `pip install -r requirements.txt` then
+  `gunicorn wsgi:app --bind 0.0.0.0:$PORT`.
+- **Vercel:** works only with a serverless wrapper plus a MySQL provider that
+  allows many short connections; Render is the simpler choice for this project.
+
+`gunicorn` does not run on Windows (it needs `fcntl`); on Windows use
+`python app.py` or `.\run.ps1` instead. That is why the local steps below still
+use the Flask server.
 
 ---
 
@@ -263,7 +352,13 @@ ROLLBACK;
 ```text
 car_service/
 ├── app.py                  Flask routes, DB helpers, table registry, reports
+├── wsgi.py                 Gunicorn entry point (wsgi:app)
+├── init_db.py              Loads sql/database.sql into local or cloud MySQL
 ├── requirements.txt
+├── Procfile                Start command for Render / Railway
+├── render.yaml             Render Blueprint
+├── run.ps1                 One-command Windows start
+├── .env.example            Template for environment variables
 ├── README.md
 ├── sql/
 │   ├── database.sql        Schema, sample data, job_bill view

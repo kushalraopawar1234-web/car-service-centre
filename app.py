@@ -35,18 +35,36 @@ app.secret_key = os.getenv("SECRET_KEY", "reva-dbms-car-service-dev-key")
 # ---------------------------------------------------------------------
 # Database helpers (one connection per request, always closed)
 # ---------------------------------------------------------------------
+def db_config():
+    """Connection settings from environment variables.
+
+    Local MySQL works with the defaults. Managed MySQL providers (Aiven,
+    TiDB Cloud, PlanetScale-style endpoints, Railway, Clever Cloud) need
+    DB_HOST / DB_PORT / DB_USER / DB_PASS and usually TLS, which is why
+    DB_SSL exists.
+    """
+    config = {
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": int(os.getenv("DB_PORT", "3306")),
+        "user": os.getenv("DB_USER", "root"),
+        "password": os.getenv("DB_PASS", ""),
+        "database": os.getenv("DB_NAME", "car_service_db"),
+        "charset": "utf8mb4",
+        "autocommit": False,
+        "connection_timeout": int(os.getenv("DB_TIMEOUT", "15")),
+    }
+
+    if os.getenv("DB_SSL", "0") == "1":
+        config["ssl_disabled"] = False
+        config["ssl_verify_cert"] = os.getenv("DB_SSL_VERIFY", "0") == "1"
+
+    return config
+
+
 def get_db():
     """Return the connection for the current request, creating it once."""
     if "db" not in g:
-        g.db = mysql.connector.connect(
-            host=os.getenv("DB_HOST", "localhost"),
-            port=int(os.getenv("DB_PORT", "3306")),
-            user=os.getenv("DB_USER", "root"),
-            password=os.getenv("DB_PASS", ""),
-            database=os.getenv("DB_NAME", "car_service_db"),
-            charset="utf8mb4",
-            autocommit=False,
-        )
+        g.db = mysql.connector.connect(**db_config())
     return g.db
 
 
@@ -1044,9 +1062,21 @@ def database_error(error):
     )
 
 
+# ---------------------------------------------------------------------
+# Health check (used by Render / Railway / uptime monitors)
+# ---------------------------------------------------------------------
+@app.get("/healthz")
+def healthz():
+    try:
+        query_one("SELECT 1 AS ok")
+    except Error as error:
+        return {"status": "error", "database": friendly_db_error(error)}, 503
+    return {"status": "ok", "database": "connected"}
+
+
 if __name__ == "__main__":
     app.run(
-        host=os.getenv("FLASK_HOST", "127.0.0.1"),
-        port=int(os.getenv("FLASK_PORT", "5000")),
+        host=os.getenv("FLASK_HOST", "0.0.0.0"),
+        port=int(os.getenv("PORT") or os.getenv("FLASK_PORT", "5000")),
         debug=os.getenv("FLASK_DEBUG", "0") == "1",
     )
