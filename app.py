@@ -625,6 +625,7 @@ def inject_nav():
     return {
         "nav_tables": [(key, meta["plural"]) for key, meta in TABLES.items()],
         "current_year": date.today().year,
+        "db_name": os.getenv("DB_NAME", "car_service_db"),
     }
 
 

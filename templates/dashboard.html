@@ -6,7 +6,7 @@
   <div>
     <p class="eyebrow">Workshop overview</p>
     <h1>Dashboard</h1>
-    <p class="muted">Live totals from <code>car_service_db</code>.</p>
+    <p class="muted">Live totals from <code>{{ db_name }}</code>.</p>
   </div>
   <a class="btn primary" href="{{ url_for('add_row', table='job_card') }}">+ New job card</a>
 </div>
