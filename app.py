@@ -25,6 +25,13 @@ from flask import (
 )
 from mysql.connector import Error
 
+try:  # optional: lets a local .env file work without exporting variables
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:  # pragma: no cover - dotenv is optional
+    pass
+
 # ---------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------

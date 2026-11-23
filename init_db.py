@@ -107,6 +107,7 @@ def connect(database=None):
 
 def main():
     skip_create = "--skip-create" in sys.argv or os.getenv("SKIP_DB_CREATE", "0") == "1"
+    existing_db = "--existing-db" in sys.argv
     db_name = os.getenv("DB_NAME", "car_service_db")
 
     here = os.path.dirname(os.path.abspath(__file__))
@@ -115,14 +116,20 @@ def main():
         statements = split_statements(handle.read())
 
     print(f"Connecting to {os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')} ...")
-    connection = connect()
+    connection = connect(database=db_name if existing_db else None)
     cursor = connection.cursor()
 
     ran = skipped = 0
     for statement in statements:
         head = statement.lstrip().upper()
 
-        if skip_create and (head.startswith("DROP DATABASE") or head.startswith("CREATE DATABASE")):
+        if existing_db and head.startswith("USE "):
+            skipped += 1
+            continue
+
+        if (skip_create or existing_db) and (
+            head.startswith("DROP DATABASE") or head.startswith("CREATE DATABASE")
+        ):
             skipped += 1
             continue
 
